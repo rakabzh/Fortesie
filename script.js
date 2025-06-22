@@ -53,11 +53,9 @@ async function getData(url) {
   }
 }
 async function main() {
-  console.log(
-    await getData(
-      "https://analytics.fortesie.epu.ntua.gr/calculate_overall_degree_days/fortesie_demo_4"
-    )
-  );
+  await getData(
+    "https://analytics.fortesie.epu.ntua.gr/calculate_overall_degree_days/fortesie_demo_4"
+  )
 }
 
 main();
