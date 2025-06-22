@@ -16,5 +16,5 @@ npm install axios fs
 ## Utilisation
 Ajouter votre token après le ```keycloak_token: ```
 ```bash
-node index.js
+node script.js
 ```
