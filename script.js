@@ -53,7 +53,7 @@ async function getData() {
       endDate.setDate(endDate.getDate() - 1);
       const data = await getDegreDayData(buildingString, startDate, endDate);
       simplifiedData.push({
-        dateCount:
+        dayCount:
           Math.round(
             (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
           ) + 1,
