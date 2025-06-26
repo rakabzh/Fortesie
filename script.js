@@ -1,3 +1,4 @@
+import axios from "axios";
 import fs from "fs";
 
 const buildingList = [
@@ -9,60 +10,37 @@ const buildingList = [
   "2821",
   "2450",
   "3467",
+  "2460",
 ];
 
-async function getDegreDayData(building, startDate, endDate) {
-  const dataModule = await import(`./buildingData/${building}.js`);
-  let list = dataModule[building];
-  list.filter(
-    (item) =>
-      new Date(item.startDate) >= startDate && new Date(item.endDate) <= endDate
-  );
-  return list;
-}
-async function getSumDD(data) {
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += 100 - data[i].value;
-  }
-  return sum;
+async function getDegreDayData(url, building) {
+  const params = {
+    keycloak_token:
+      "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ3QWtNZU9ISDRqbVh5WWhMamkzSUVXYkhya3RFeXVTYmdmaVJLZWxzbGVBIn0.eyJleHAiOjE3NTA0MzY2MzUsImlhdCI6MTc1MDQwNzgzNSwianRpIjoiMDRiZWEzNjYtY2ExMS00ZTAxLTg5MjYtOWM5NWE0ZDUxOWQ2IiwiaXNzIjoiaHR0cHM6Ly9mb3J0ZXNpZS5ldXJvZHluLmNvbS9hdXRoL3JlYWxtcy9mb3J0ZXNpZSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI3MzdkYTJjYi1lOTg5LTRlYzgtOGI4Mi0zNmI4Mjc0OWY0OTIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJncmVlbi1ldXJvIiwiYWNyIjoiMSIsImFsbG93ZWQtb3JpZ2lucyI6WyIvKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJkZWZhdWx0LXJvbGVzLWZvcnRlc2llIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6InByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImNsaWVudEhvc3QiOiI3OC4xMjYuMTY0LjIxNiIsInByZWZlcnJlZF91c2VybmFtZSI6InNlcnZpY2UtYWNjb3VudC1ncmVlbi1ldXJvIiwiY2xpZW50QWRkcmVzcyI6Ijc4LjEyNi4xNjQuMjE2IiwiY2xpZW50X2lkIjoiZ3JlZW4tZXVybyJ9.NreMheHe7zouy6VSJOMJySTTeaIDyzqmNp-Q_hieYCDJmB7pgRM0NumK_sdTqbfetgdTxc006mRr6Ks7IPw0Q3bEs3lw6PoqMUN72GtPXLtrBS0ntKlQ3uuSstz8f8HsEc_4hx31zdOW30zQweTCFQnkidSh41q9MtB2rrnAdO47xQ5Su2xE9Yl_SBj6bH--7Vpu0Ib3mZTwsvMNWUYsR_3zdRoJn4mi5mP2rG480ecQmshs2OMy7GBxLjkedh7d5PcOJrABA9kPORx_tyCmeXCRfipn3rwOmuQqcpJy9u7bhaJs-FjpfhvdESU7NExwHMaHhIFeefy9MzXshAHthg",
+    overall_degree_base_temperature: "100",
+    sensor: `urn:ngsi-ld:fortesie:demo-4:${building}:wser-temperature`,
+    from: "2023-08-21T00:00:00.000Z",
+    to: "2024-11-20T00:00:00.000Z",
+  };
+  const response = await axios.get(url, {
+    params: params,
+  });
+  return response.data;
 }
 
-async function getData() {
-  for (let building = 0; building < buildingList.length; building++) {
-    const buildingString = "building_" + buildingList[building];
-    let tsFile = await import(`./buildings/${buildingString}.js`);
-    const startGolbalDate =
-      tsFile["FORTESIE_" + buildingString.toUpperCase()][
-        "monthlyConsumptions"
-      ][0].startDate;
-    const endGlobalDate =
-      tsFile["FORTESIE_" + buildingString.toUpperCase()]["monthlyConsumptions"][
-        tsFile["FORTESIE_" + buildingString.toUpperCase()][
-          "monthlyConsumptions"
-        ].length - 1
-      ].endDate;
-    let currentDate = new Date(startGolbalDate);
-    let simplifiedData = [];
-    while (currentDate < endGlobalDate) {
-      let startDate = new Date(currentDate);
-      startDate.setHours(12);
-      let endDate = new Date(currentDate);
-      endDate.setHours(12);
-      endDate.setMonth(endDate.getMonth() + 1);
-      endDate.setDate(endDate.getDate() - 1);
-      const data = await getDegreDayData(buildingString, startDate, endDate);
-      simplifiedData.push({
-        dayCount:
-          Math.round(
-            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-          ) + 1,
-        value: await getSumDD(data),
-        startDate: startDate,
-        endDate: endDate,
-      });
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
+async function getData(url) {
+  for (let i = 0; i < buildingList.length; i++) {
+    const buildingString = "building_" + buildingList[i];
+    const data = await getDegreDayData(url, buildingString);
+    const simplifiedData = data.overall_degree_days
+      .map((item) => ({
+        value: item.value,
+        observedAt: item.observedAt,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(a.observedAt).getTime() - new Date(b.observedAt).getTime()
+      );
     fs.writeFileSync(
       buildingString + ".js",
       `export const ${buildingString} = ${JSON.stringify(
@@ -72,11 +50,12 @@ async function getData() {
       )};`,
       "utf-8"
     );
-    console.log("build : " + buildingString);
   }
 }
 async function main() {
-  await getData();
+  await getData(
+    "https://analytics.fortesie.epu.ntua.gr/calculate_overall_degree_days/fortesie_demo_4"
+  )
 }
 
 main();
