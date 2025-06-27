@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import fs from "fs";
 
 const buildingList = [
@@ -27,10 +28,19 @@ async function getSumDD(data) {
   return sum;
 }
 
+async function getAbsSumDD(data) {
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) {
+    sum += Math.abs(data[i].value - 82);
+  }
+  return sum;
+}
+
 async function getData() {
   for (let building = 0; building < buildingList.length; building++) {
     const buildingString = "building_" + buildingList[building];
     let tsFile = await import(`./buildings/${buildingString}.js`);
+    let listCumulTemperature = [];
     const startGolbalDate =
       tsFile["FORTESIE_" + buildingString.toUpperCase()][
         "monthlyConsumptions"
@@ -41,6 +51,7 @@ async function getData() {
           "monthlyConsumptions"
         ].length - 1
       ].endDate;
+    endGlobalDate.setHours(23, 59, 59, 999);
     let currentDate = new Date(startGolbalDate);
     let simplifiedData = [];
     while (currentDate < endGlobalDate) {
@@ -51,19 +62,28 @@ async function getData() {
       endDate.setMonth(endDate.getMonth() + 1);
       endDate.setDate(endDate.getDate() - 1);
       const data = await getDegreDayData(buildingString, startDate, endDate);
+      const sum = await getSumDD(data);
+      listCumulTemperature.push(sum);
+      const absSum = await getAbsSumDD(data);
+      const dayCount =
+        Math.round(
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+        ) + 1;
       simplifiedData.push({
-        dateCount:
-          Math.round(
-            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-          ) + 1,
-        value: await getSumDD(data),
+        dayCount: dayCount,
+        CumulTemperature: sum,
+        "SumDD-18": 18 * dayCount - sum,
+        "AbsSumDD-18": absSum,
         startDate: startDate,
         endDate: endDate,
       });
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
+    if (!fs.existsSync("outpout")) {
+      fs.mkdirSync("outpout");
+    }
     fs.writeFileSync(
-      buildingString + ".js",
+      `outpout/${buildingString}.js`,
       `export const ${buildingString} = ${JSON.stringify(
         simplifiedData,
         null,
