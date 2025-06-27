@@ -21,7 +21,6 @@ async function getDegreDayData(building, startDate, endDate) {
 }
 async function getSumDD(data) {
   let sum = 0;
-  console.log(data.length);
   for (let i = 0; i < data.length; i++) {
     sum += 100 - data[i].value;
   }
