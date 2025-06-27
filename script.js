@@ -41,8 +41,11 @@ async function getData(url) {
         (a, b) =>
           new Date(a.observedAt).getTime() - new Date(b.observedAt).getTime()
       );
+    if (!fs.existsSync("buildingData")) {
+      fs.mkdirSync("buildingData");
+    }
     fs.writeFileSync(
-      buildingString + ".js",
+      `outpout/${buildingData}.js`,
       `export const ${buildingString} = ${JSON.stringify(
         simplifiedData,
         null,
